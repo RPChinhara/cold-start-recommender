@@ -12,6 +12,7 @@ def item_attribute_generation_matrix(i_old, i_new, item_attributes: dict):
     for item_id in i_old:
         attributes = item_attributes.get(item_id, [])
         A_set.update(attributes)
+        IA_matrix.append(attributes)
 
     A_set = list(A_set)
 
