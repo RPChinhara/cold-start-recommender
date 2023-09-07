@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 def item_attribute_generation_matrix(i_old, i_new, item_attributes: dict, A_set: tuple):
     '''
@@ -82,9 +83,9 @@ def rating_prediction(IAmatrix, UImatrix, user, item, neighbours):
     denominator = 0
 
     for j in neighbours:
-        r_uj = UImatrix[UImatrix['movie id'] == j][UImatrix['user id'] == user]['rating']
+        r_uj = UImatrix.loc[(UImatrix['movie id'] == j) & (UImatrix['user id'] == user), 'rating']
         sim_ratings = ratings_based_similarity(UImatrix, item, j)
-        sim_attributes = attribute_based_similarity(IAmatrix, item, j)
+        sim_attributes = attribute_based_similarity(IAmatrix, j, item)
         time_penalty_factor = time_penalty(UImatrix[UImatrix['movie id'] == j]['timestamp'], UImatrix[UImatrix['movie id'] == item]['timestamp'], min_timestamp=UImatrix['timestamp'].min())
 
         numerator += time_penalty_factor * sim_attributes * (r_uj - ru_mean)
@@ -116,16 +117,8 @@ def user_preferences(IAmatrix, UImatrix, user, item, neighbours):
         return user_preference
     return 0
 
-def update_predicted_UIMatrix(predicted_UImatrix, user_id, item_id, user_preference):
-    matching_rows = predicted_UImatrix[(predicted_UImatrix['user id'] == user_id) & (predicted_UImatrix['movie id'] == item_id)]
-
-    if len(matching_rows) == 1:
-        predicted_UImatrix.loc[matching_rows.index, 'predicted rating'] = user_preference
-
-
-def attribute_based_knn(IAMatrix, UIMatrix, k):
-    predicted_UIMatrix = UIMatrix[UIMatrix['movie id'].isin(IAMatrix['new_items'].keys())].copy()
-    predicted_UIMatrix = predicted_UIMatrix.drop(['rating'], axis=1)
+def attribute_based_knn(IAMatrix, UIMatrix, k, users):
+    predicted_UIMatrix = pd.DataFrame(columns=['user id', 'movie id', 'predicted rating'])
 
     for new_item in IAMatrix['new_items'].keys():
         similar_list = []
@@ -135,8 +128,10 @@ def attribute_based_knn(IAMatrix, UIMatrix, k):
         similar_list.sort(key=lambda x: x[1], reverse=True)
         neighbours = [item[0] for item in similar_list[:k]]
 
-        for user_id in predicted_UIMatrix['user id'].unique():
-            UserPreference = user_preferences(IAMatrix, UIMatrix, user_id, new_item, neighbours)
-            update_predicted_UIMatrix(predicted_UIMatrix, user_id, new_item, UserPreference)
+        for user_id in users:
+            predicted_rating = rating_prediction(IAMatrix, UIMatrix, user_id, new_item, neighbours)
+            entry_dict = {'user id': [user_id], 'movie id': [new_item], 'predicted rating': [predicted_rating]}
+            entry = pd.DataFrame(entry_dict)
+            predicted_UIMatrix = pd.concat([predicted_UIMatrix, entry], ignore_index=True)            
 
-    return predicted_UIMatrix.drop('timestamp', axis=1).reset_index(drop=True)
+    return predicted_UIMatrix
