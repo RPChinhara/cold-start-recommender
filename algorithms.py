@@ -107,27 +107,6 @@ def rating_prediction(IAmatrix, UImatrix, user, item, neighbours):
         return r_hat_ui
     return ru_mean
 
-def user_preferences(IAmatrix, UImatrix, user, item, neighbours):
-    user_ratings = UImatrix[UImatrix['user id'] == user]
-
-    ru_mean = np.mean(user_ratings['rating'])
-    numerator = 0
-    denominator = 0
-
-    for j in neighbours:
-        r_uj = UImatrix.loc[(UImatrix['movie id'] == j) & (UImatrix['user id'] == user), 'rating']
-        sim_ratings = ratings_based_similarity(UImatrix, item, j)
-        sim_attributes = attribute_based_similarity(IAmatrix, j, item)
-        time_penalty_factor = time_penalty(UImatrix[UImatrix['movie id'] == j]['timestamp'], UImatrix[UImatrix['movie id'] == item]['timestamp'], min_timestamp=UImatrix['timestamp'].min())
-
-        numerator += time_penalty_factor * sim_attributes * (r_uj - ru_mean)
-        denominator += sim_ratings
-
-    if denominator != 0:
-        user_preference = numerator / denominator
-        return user_preference
-    return 0
-
 def attribute_based_knn(IAMatrix, UIMatrix, k, users):
     predicted_UIMatrix = pd.DataFrame(columns=['user id', 'movie id', 'predicted rating'])
 
