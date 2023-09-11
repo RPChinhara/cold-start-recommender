@@ -85,7 +85,7 @@ def time_penalty(old_item_timestamp, new_item_timestamp, min_timestamp):
     return time_penalty_factor
 
 # Eq. (11)
-def rating_prediction(IAmatrix, UImatrix: pd.DataFrame, user, item, neighbours):
+def rating_prediction(IAmatrix, UImatrix: pd.DataFrame, user, item, neighbours, minimum_timestamp):
     user_ratings = UImatrix[UImatrix['user id'] == user]
 
     ru_mean = np.mean(user_ratings['rating'])
@@ -96,7 +96,7 @@ def rating_prediction(IAmatrix, UImatrix: pd.DataFrame, user, item, neighbours):
         r_uj = UImatrix.loc[(UImatrix['movie id'] == j) & (UImatrix['user id'] == user), 'rating']
         sim_ratings = ratings_based_similarity(UImatrix, item, j)
         sim_attributes = attribute_based_similarity(IAmatrix, j, item)
-        time_penalty_factor = time_penalty(UImatrix[UImatrix['movie id'] == j]['timestamp'], UImatrix[UImatrix['movie id'] == item]['timestamp'], min_timestamp=UImatrix['timestamp'].min())
+        time_penalty_factor = time_penalty(UImatrix[UImatrix['movie id'] == j]['timestamp'], UImatrix[UImatrix['movie id'] == item]['timestamp'], min_timestamp=minimum_timestamp)
 
         numerator += time_penalty_factor * sim_attributes * (r_uj - ru_mean)
         denominator += sim_ratings
@@ -109,6 +109,7 @@ def rating_prediction(IAmatrix, UImatrix: pd.DataFrame, user, item, neighbours):
 
 def attribute_based_knn(IAMatrix, UIMatrix: pd.DataFrame, k, users):
     predicted_UIMatrix = UIMatrix.copy()
+    minimum_timestamp = predicted_UIMatrix['timestamp'].min()
 
     for new_item in IAMatrix['new_items'].keys():
         similar_list = []
@@ -119,7 +120,7 @@ def attribute_based_knn(IAMatrix, UIMatrix: pd.DataFrame, k, users):
         neighbours = [item[0] for item in similar_list[:k]]
 
         for user_id in users:
-            predicted_rating = rating_prediction(IAMatrix, predicted_UIMatrix, user_id, new_item, neighbours)
+            predicted_rating = rating_prediction(IAMatrix, predicted_UIMatrix, user_id, new_item, neighbours, minimum_timestamp)
             if isinstance(predicted_rating, float):
                 entry_dict = {'user id': [user_id], 'movie id': [new_item], 'rating': [predicted_rating]}
                 entry = pd.DataFrame(entry_dict)
