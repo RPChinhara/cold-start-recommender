@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from math import isnan
 
 def item_attribute_generation_matrix(i_old, i_new, item_attributes: dict, A_set: tuple):
     '''
