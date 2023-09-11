@@ -104,8 +104,8 @@ def rating_prediction(IAmatrix, UImatrix: pd.DataFrame, user, item, neighbours):
     if denominator != 0:
         user_preferences = numerator / denominator
         r_hat_ui = ru_mean + user_preferences
-        return r_hat_ui, user_preferences
-    return ru_mean, 0
+        return r_hat_ui
+    return ru_mean
 
 def attribute_based_knn(IAMatrix, UIMatrix: pd.DataFrame, k, users):
     predicted_UIMatrix = UIMatrix.copy()
@@ -120,8 +120,8 @@ def attribute_based_knn(IAMatrix, UIMatrix: pd.DataFrame, k, users):
 
         for user_id in users:
             predicted_rating = rating_prediction(IAMatrix, predicted_UIMatrix, user_id, new_item, neighbours)
-            if isinstance(predicted_rating[0], float):
-                entry_dict = {'user id': [user_id], 'movie id': [new_item], 'rating': [predicted_rating[0]], 'user preferences': [predicted_rating[1]]}
+            if isinstance(predicted_rating, float):
+                entry_dict = {'user id': [user_id], 'movie id': [new_item], 'rating': [predicted_rating]}
                 entry = pd.DataFrame(entry_dict)
                 predicted_UIMatrix = pd.concat([predicted_UIMatrix, entry], ignore_index=True)            
 
