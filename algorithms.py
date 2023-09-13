@@ -41,6 +41,9 @@ def ratings_based_similarity(UImatrix: pd.DataFrame, item1, item2):
     item1_ratings = item1_ratings.loc[item1_ratings['user id'].isin(common_users)]
     item2_ratings = item2_ratings.loc[item2_ratings['user id'].isin(common_users)]
 
+    item1_ratings = item1_ratings.groupby(['user id', 'movie id'])['rating'].mean().reset_index()
+    item2_ratings = item2_ratings.groupby(['user id', 'movie id'])['rating'].mean().reset_index()
+
     item1_ratings = item1_ratings['rating'].to_numpy()
     item2_ratings = item2_ratings['rating'].to_numpy()
 
@@ -88,7 +91,7 @@ def time_penalty(old_item_timestamp, new_item_timestamp, min_timestamp):
 def rating_prediction(IAmatrix, UImatrix: pd.DataFrame, user, item, neighbours, minimum_timestamp):
     user_ratings = UImatrix[UImatrix['user id'] == user]
 
-    ru_mean = np.mean(user_ratings['rating'])
+    ru_mean = user_ratings['rating'].mean()
     numerator = 0
     denominator = 0
 
@@ -104,11 +107,12 @@ def rating_prediction(IAmatrix, UImatrix: pd.DataFrame, user, item, neighbours, 
     if denominator != 0:
         user_preferences = numerator / denominator
         r_hat_ui = ru_mean + user_preferences
-        return r_hat_ui
-    return ru_mean
+        return r_hat_ui, user_preferences
+    return ru_mean, 0
 
 def attribute_based_knn(IAMatrix, UIMatrix: pd.DataFrame, k, users):
     predicted_UIMatrix = UIMatrix.copy()
+    predicted_UIMatrix['user preferences'] = 0
     minimum_timestamp = predicted_UIMatrix['timestamp'].min()
 
     for new_item in IAMatrix['new_items'].keys():
@@ -121,8 +125,8 @@ def attribute_based_knn(IAMatrix, UIMatrix: pd.DataFrame, k, users):
 
         for user_id in users:
             predicted_rating = rating_prediction(IAMatrix, predicted_UIMatrix, user_id, new_item, neighbours, minimum_timestamp)
-            if isinstance(predicted_rating, float):
-                entry_dict = {'user id': [user_id], 'movie id': [new_item], 'rating': [predicted_rating]}
+            if isinstance(predicted_rating[0], float):
+                entry_dict = {'user id': [user_id], 'movie id': [new_item], 'rating': [predicted_rating[0]], 'user preferences': [predicted_rating[1]]}
                 entry = pd.DataFrame(entry_dict)
                 predicted_UIMatrix = pd.concat([predicted_UIMatrix, entry], ignore_index=True)            
 
