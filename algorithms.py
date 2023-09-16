@@ -131,3 +131,26 @@ def attribute_based_knn(IAMatrix, UIMatrix: pd.DataFrame, k, users):
                 predicted_UIMatrix = pd.concat([predicted_UIMatrix, entry], ignore_index=True)            
 
     return predicted_UIMatrix
+
+def matrix_factorization(train_matrix, learning_rate=0.01, num_iterations=100, regularization_param=0.02, num_factors=21):
+    num_users, num_items = train_matrix.shape
+
+    user_factors = np.random.randn(num_users, num_factors)
+    item_factors = np.random.randn(num_items, num_factors)
+
+    for iteration in range(num_iterations):
+        for u in range(num_users):
+            for i in range(num_items):
+                if train_matrix[u][i] > 0:
+                    # Calculate the predicted rating
+                    predicted_rating = np.dot(user_factors[u], item_factors[i])
+
+                    # Calculate the prediction error
+                    prediction_error = train_matrix[u][i] - predicted_rating
+
+                    # Update user and item latent factors
+                    for k in range(num_factors):
+                        user_factors[u][k] += learning_rate * (prediction_error * item_factors[i][k] - regularization_param * user_factors[u][k])
+                        item_factors[i][k] += learning_rate * (prediction_error * user_factors[u][k] - regularization_param * item_factors[i][k])
+
+    return user_factors, item_factors
