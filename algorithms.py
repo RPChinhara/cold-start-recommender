@@ -132,26 +132,32 @@ def attribute_based_knn(IAMatrix, UIMatrix: pd.DataFrame, k, users):
 
     return predicted_UIMatrix
 
-def matrix_factorization(train_matrix, learning_rate=0.01, num_iterations=100, regularization_param=0.02, num_factors=21):
+def matrix_factorization(train_matrix: np.ndarray, learning_rate=0.01, num_iterations=100, regularization_param=0.02, num_factors=21, eta=1):
     num_users, num_items = train_matrix.shape
 
     user_factors = np.random.randn(num_users, num_factors)
     item_factors = np.random.randn(num_items, num_factors)
+
+    u_mean = np.mean(train_matrix)
+    bu = 0
 
     while num_iterations > 0:
         for u in range(num_users):
             for i in range(num_items):
                 if train_matrix[u][i] > 0:
                     # Calculate the predicted rating
-                    predicted_rating = np.dot(user_factors[u], item_factors[i])
+                    predicted_rating = np.dot(user_factors[u], item_factors[i]) + bu + u_mean
 
                     # Calculate the prediction error
-                    prediction_error = train_matrix[u][i] - predicted_rating
+                    prediction_error = train_matrix[u][i] - predicted_rating - bu - u_mean
 
                     # Update user and item latent factors
                     for k in range(num_factors):
+                        bu += learning_rate * (prediction_error - (regularization_param * bu))
                         user_factors[u][k] += learning_rate * (prediction_error * item_factors[i][k] - regularization_param * user_factors[u][k])
                         item_factors[i][k] += learning_rate * (prediction_error * user_factors[u][k] - regularization_param * item_factors[i][k])
+                        learning_rate *= eta
+
         num_iterations -= 1
 
     return user_factors, item_factors
