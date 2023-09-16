@@ -138,7 +138,7 @@ def matrix_factorization(train_matrix, learning_rate=0.01, num_iterations=100, r
     user_factors = np.random.randn(num_users, num_factors)
     item_factors = np.random.randn(num_items, num_factors)
 
-    for iteration in range(num_iterations):
+    while num_iterations > 0:
         for u in range(num_users):
             for i in range(num_items):
                 if train_matrix[u][i] > 0:
@@ -152,5 +152,6 @@ def matrix_factorization(train_matrix, learning_rate=0.01, num_iterations=100, r
                     for k in range(num_factors):
                         user_factors[u][k] += learning_rate * (prediction_error * item_factors[i][k] - regularization_param * user_factors[u][k])
                         item_factors[i][k] += learning_rate * (prediction_error * user_factors[u][k] - regularization_param * item_factors[i][k])
+        num_iterations -= 1
 
     return user_factors, item_factors
